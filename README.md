@@ -105,10 +105,3 @@ The robot successfully reproduced recognizable images on a vertical whiteboard w
 ## Tech Stack
 
 `Arduino` `MATLAB` `C++` `PID Control` `Inverse Kinematics` `Encoder Feedback` `DC Motors` `Servo Control` `Image Processing` `Morphological Operations` `Fusion 360`
-
----
-
-## Context
-
-Built as part of the Mechatronics Engineering 35 course at STEM Innovation Academy, Calgary.
-Featured in the [STEMIA Journal](https://stemiajournal.ca/2024/11/02/integrated-stem-in-mechatronics-engineering-35-drawing-robots/).
