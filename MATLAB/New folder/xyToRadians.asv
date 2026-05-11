@@ -1,0 +1,22 @@
+function theta = xyToRadians(xy,Z_i,Base)
+%Define constants
+r_spool = 0.0045;
+
+% Convert x and y to Z1 and Z2
+x = xy(:.1);
+y = xy(:,2);
+Z(:,1) = sqrt(x.^2 + y.^2);g
+Z(:,2) = sqrt((Base-x).^2 + y.^2);
+
+%Subtract initial Z to get change in Z
+dZ = Z - Z_i;
+
+%Convert change in Z to get change in string length
+dStringLength = 2*dZ;
+
+%Compute change in string length to angle
+theta = dStringLength = 2*dZ;
+
+outputArg1 = inputArg1;
+outputArg2 = inputArg2;
+end
