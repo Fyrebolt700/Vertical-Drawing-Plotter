@@ -1,6 +1,6 @@
 # Vertical Wall-Climbing Drawing Plotter
 
-A mechatronic system that converts colour images into drawn output on a vertical whiteboard using inverse kinematics, PID control, and real-time encoder feedback.
+A mechatronic system that converts any colour image into a physical drawing on a vertical whiteboard — using inverse kinematics, real-time PID control, and encoder feedback on an Arduino Nano.
 
 ![Robot drawing on whiteboard](bear.webp)
 
@@ -8,24 +8,41 @@ A mechatronic system that converts colour images into drawn output on a vertical
 
 ## What It Does
 
-The robot hangs from a whiteboard using two DC motors and a system of cables. Given any colour image, it processes it into a plottable trajectory, computes the required motor angles using an inverse kinematics model, and draws the image on the whiteboard in real time. A micro-servo controls a marker pen lift mechanism for 2-bit colour drawing.
+The robot hangs from a whiteboard via two cable-driven DC motors. Feed it any colour image — it processes it into a plottable trajectory, computes the required motor angles using a physics-based IK model, and draws the image in real time. A micro-servo controls a pen lift mechanism for 2-bit colour output.
+
+---
+
+## Image Processing Pipeline
+
+The full pipeline from source image to motor commands, visualized:
+
+| Step | Output |
+|---|---|
+| 1. Source image | ![Original bear image](stage1_original.png) |
+| 2. Grayscale conversion | ![Grayscale](stage2_grayscale.png) |
+| 3. Binarization + morphological filtering | ![Binary](stage3_binary.png) |
+| 4. Edge extraction | ![Edges](stage4_edges.png) |
+| 5. Pixel path extraction | ![Pixel paths](stage5_paths.png) |
+| 6. Segmented drawable paths (colour-coded) | ![Segments](stage6_segments.png) |
+
+Each colour in step 6 represents a separate drawable segment — the order these are sent to the robot determines the drawing sequence.
 
 ---
 
 ## System Overview
 
 ```
-Colour Image (MATLAB)
-       ↓
-Grayscale → Binarize → Morphological filtering
-       ↓
-Pixel extraction → Segment merging → Scaling to board coordinates
-       ↓
-Inverse Kinematics Model → Motor shaft angles
-       ↓
-Arduino Nano 33 IoT (PID loop + encoder feedback)
-       ↓
-DC Motors + Servo → Robot moves and draws
+Colour Image
+     ↓
+Grayscale → Binarize → Morphological filtering (dilation + erosion)
+     ↓
+Pixel extraction → Recursive segment merging → Scale to board coordinates
+     ↓
+Physics-based IK model → Motor shaft angles (with torque constraints)
+     ↓
+Arduino Nano 33 IoT — PID loop + encoder feedback
+     ↓
+2× DC Motors + Micro-servo → Robot draws on whiteboard
 ```
 
 ---
@@ -36,52 +53,62 @@ DC Motors + Servo → Robot moves and draws
 |---|---|
 | Arduino Nano 33 IoT | Real-time control, PID loop execution |
 | 2× DC motors with encoders | Cable-driven XY movement across whiteboard |
-| Micro-servo | Pen lift mechanism (marker up/down) |
+| Micro-servo | Pen lift — marker up/down between segments |
 | Marker pens (2 colours) | 2-bit colour drawing output |
-| Whiteboard + mounting hardware | Drawing surface and robot suspension |
+| Whiteboard + mounting hardware | Drawing surface and robot suspension point |
 
 ---
 
 ## Software
 
 ### MATLAB — Image Processing Pipeline
-- Converts colour source image to grayscale and binarizes it
-- Applies morphological dilation and erosion to clean up geometry
-- Uses recursion to extract pixel paths and merge them into drawable segments
-- Applies a scaling factor to convert pixel coordinates to physical whiteboard distances
-- Outputs an ordered list of (x, y) board coordinates for the robot to follow
+- Converts colour image to grayscale, then binarizes it
+- Applies morphological dilation and erosion to remove noise and close gaps in geometry
+- Recursively extracts pixel paths and merges them into clean, motor-executable segments
+- Applies a scaling factor to map pixel coordinates to physical whiteboard distances
+- Outputs an ordered list of (x, y) board coordinates per segment
 
 ### MATLAB — Inverse Kinematics Model
-- Takes target (x, y) board coordinates as input
-- Uses trigonometry and linear mechanics to compute the required cable lengths
-- Translates cable lengths into required DC motor shaft angles
-- Accounts for motor torque limits: constrains movement to regions where motor load stays below 30% of stall torque
-- Generates torque plots across the drawing surface to visualize safe operating zones
+- Takes target (x, y) board coordinates and computes required cable lengths geometrically
+- Translates cable lengths into required DC motor shaft angles using trigonometry and linear mechanics
+- Models gravitational and tension forces via free-body diagrams to compute motor torque at each board position
+- Constrains robot movement to zones where motor load stays below 30% of stall torque — prevents stalling and slipping near board edges
+- Generates torque plots across the full drawing surface to visualize safe operating zones
 
-### Arduino — Real-Time Control (PID + Encoder Feedback)
-- Reads encoder counts from both DC motors at runtime
-- Computes positional error between current and target shaft angle
-- Runs a PID control loop to drive motors toward target with minimal overshoot
-- Coordinates servo state (pen up/pen down) with trajectory data from MATLAB
+### Arduino — Real-Time Control
+- Reads encoder counts from both motors at runtime to track actual shaft position
+- Computes positional error between current and target angle
+- Runs a PID control loop to drive each motor toward target with minimal overshoot and oscillation
+- Coordinates servo state (pen up/down) with segment boundaries from the MATLAB trajectory data
 
 ---
 
 ## Key Engineering Challenges
 
-**Torque constraints:** Gravitational and tension forces on the motors vary significantly across the whiteboard surface. Free-body diagrams were used to model these forces, and motor datasheets were used to compute torque at each position. Robot movement was constrained to zones where motor load stays below 30% stall torque to prevent stalling or slipping.
+**Torque constraints across the board surface:**
+Motor load varies significantly depending on where the robot is on the whiteboard — cable geometry and gravity create very different tension loads near the top vs. the bottom corners. Free-body diagrams were used to model these forces at each position, and the IK model was constrained so the robot only moves in zones where load stays below 30% stall torque.
 
-**Image geometry:** Raw pixel extraction produces noisy, invalid paths. Morphological operations (dilation + erosion) were applied before extraction, and recursive segment merging was used to produce clean, motor-executable trajectories.
+**Cleaning up image geometry:**
+Raw pixel extraction produces noisy, fragmented paths that cause jerky or invalid robot motion. Morphological dilation and erosion were applied before extraction to close gaps and remove artifacts, and recursive segment merging reduced the total number of pen lifts and produced smoother drawing paths.
 
-**PID tuning:** Encoder feedback was used to close the control loop and correct for positional drift during drawing. Gains were tuned empirically to balance tracking accuracy against motor oscillation.
+**Closing the control loop:**
+Without encoder feedback, cable slip and motor variation caused significant positional drift across a drawing. Encoder counts were fed into a PID loop to continuously correct error, with gains tuned empirically to balance tracking accuracy against motor oscillation.
 
 ---
 
 ## Results
 
-The robot successfully reproduced recognizable images on a vertical whiteboard, demonstrating accurate path following and stable motor control across the drawing surface.
+The robot successfully reproduced recognizable images on a vertical whiteboard with accurate path following and stable motor control. The bear image above was drawn using the full pipeline from source image to physical output.
 
 ---
 
 ## Tech Stack
 
-`Arduino` `MATLAB` `C++` `PID Control` `Inverse Kinematics` `Encoder Feedback` `DC Motors` `Servo Control` `Image Processing`
+`Arduino` `MATLAB` `C++` `PID Control` `Inverse Kinematics` `Encoder Feedback` `DC Motors` `Servo Control` `Image Processing` `Morphological Operations` `Fusion 360`
+
+---
+
+## Context
+
+Built as part of the Mechatronics Engineering 35 course at STEM Innovation Academy, Calgary.
+Featured in the [STEMIA Journal](https://stemiajournal.ca/2024/11/02/integrated-stem-in-mechatronics-engineering-35-drawing-robots/).
