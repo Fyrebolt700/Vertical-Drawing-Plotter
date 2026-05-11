@@ -18,12 +18,12 @@ The full pipeline from source image to motor commands, visualized:
 
 | Step | Output |
 |---|---|
-| 1. Source image | <img src="stage1_original.png" alt="Original bear image" width="150"> |
-| 2. Grayscale conversion | <img src="stage2_grayscale.png" alt="Grayscale" width="150"> |
-| 3. Binarization + morphological filtering | <img src="stage3_binary.png" alt="Binary" width="150"> |
-| 4. Edge extraction | <img src="stage4_edges.png" alt="Edges" width="150"> |
-| 5. Pixel path extraction | <img src="stage5_paths.png" alt="Pixel paths" width="150"> |
-| 6. Segmented drawable paths (colour-coded) | <img src="stage6_segments.png" alt="Segments" width="150"> |
+| 1. Source image | <img src="stage1_original.png" alt="Original bear image" width="250"> |
+| 2. Grayscale conversion | <img src="stage2_grayscale.png" alt="Grayscale" width="250"> |
+| 3. Binarization + morphological filtering | <img src="stage3_binary.png" alt="Binary" width="250"> |
+| 4. Edge extraction | <img src="stage4_edges.png" alt="Edges" width="250"> |
+| 5. Pixel path extraction | <img src="stage5_paths.png" alt="Pixel paths" width="250"> |
+| 6. Segmented drawable paths (colour-coded) | <img src="stage6_segments.png" alt="Segments" width="250"> |
 
 Each colour in step 6 represents a separate drawable segment — the order these are sent to the robot determines the drawing sequence.
 
