@@ -2,7 +2,7 @@
 
 A mechatronic system that converts any colour image into a physical drawing on a vertical whiteboard — using inverse kinematics, real-time PID control, and encoder feedback on an Arduino Nano.
 
-![Robot drawing on whiteboard](bear.webp)
+<img src="bear.webp" alt="Robot drawing on whiteboard" width="400">
 
 ---
 
